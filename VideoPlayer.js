@@ -12,8 +12,10 @@ import {
     Easing,
     Image,
     View,
-    Text
+    Text,
+    Share
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import _ from 'lodash';
 
 export default class VideoPlayer extends Component {
@@ -30,6 +32,8 @@ export default class VideoPlayer extends Component {
         muted:                          false,
         title:                          '',
         rate:                           1,
+        isFullscreen:                   false,
+        shareUrl:                        '',
     };
 
     constructor( props ) {
@@ -48,7 +52,9 @@ export default class VideoPlayer extends Component {
             rate: this.props.rate,
             // Controls
 
-            isFullscreen: this.props.resizeMode === 'cover' || false,
+            shareMessage: this.props.shareMessage || '',
+            shareUrl: this.props.shareUrl || '',
+            isFullscreen: this.props.isFullscreen || false,
             showTimeRemaining: true,
             volumeTrackWidth: 0,
             lastScreenPress: 0,
@@ -101,6 +107,8 @@ export default class VideoPlayer extends Component {
             togglePlayPause: this._togglePlayPause.bind( this ),
             toggleControls: this._toggleControls.bind( this ),
             toggleTimer: this._toggleTimer.bind( this ),
+            toggleVideoRate: this._toggleVideoRate.bind( this ),
+            pressShare: this._pressShare.bind( this )
         };
 
         /**
@@ -456,6 +464,33 @@ export default class VideoPlayer extends Component {
         }
 
         this.setState( state );
+    }
+
+
+    _toggleVideoRate() {
+        let state = this.state;
+        if(state.rate == 1){
+            state.rate = 1.5;
+            this.setState( state );
+            return;
+        };
+        if(state.rate == 1.5){
+            state.rate = 2;
+            this.setState( state );
+            return;
+        }
+        if(state.rate == 2){
+            state.rate = 1;
+            this.setState( state );
+            return;
+        }
+    }
+
+    _pressShare = async() => {
+        await Share.share({
+          url: this.state.shareUrl,
+          message: this.state.shareMessage,
+        });
     }
 
     /**
@@ -947,7 +982,8 @@ export default class VideoPlayer extends Component {
         const timerControl = this.props.disableTimer ? this.renderNullControl() : this.renderTimer();
         const seekbarControl = this.props.disableSeekbar ? this.renderNullControl() : this.renderSeekbar();
         const playPauseControl = this.props.disablePlayPause ? this.renderNullControl() : this.renderPlayPause();
-
+        const videoRateControl = this.props.disableRate ? this.renderNullControl() : this.renderRate();
+        const shareVideo = this.props.disableShare ? this.renderNullControl : this.renderShare();
         return(
             <Animated.View style={[
                 styles.controls.bottom,
@@ -967,11 +1003,31 @@ export default class VideoPlayer extends Component {
                     ]}>
                         { playPauseControl }
                         { this.renderTitle() }
+                        { shareVideo }
+                        { videoRateControl }
                         { timerControl }
 
                     </View>
                 </ImageBackground>
             </Animated.View>
+        );
+    }
+
+    renderShare() {
+        return this.renderControl(
+            <Icon name='share' style={{color: '#FFFFFF'}}/>,
+            this.methods.pressShare,
+            styles.controls.timer
+        );
+    }
+
+    renderRate() {
+        return this.renderControl(
+            <Text style={{color: '#FFFFFF', textAlign: 'center'}}>
+                {`${this.state.rate}x`}
+            </Text>,
+            this.methods.toggleVideoRate,
+            styles.controls.timer
         );
     }
 
